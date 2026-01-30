@@ -1,31 +1,6 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-function createTransport() {
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, NODE_ENV } =
-        process.env;
-    if (SMTP_HOST && SMTP_PORT) {
-        const port = Number(SMTP_PORT);
-        const secure = port === 465; // common SSL port
-        return nodemailer.createTransport({
-            host: SMTP_HOST,
-            port,
-            secure,
-            auth:
-                SMTP_USER && SMTP_PASS
-                    ? { user: SMTP_USER, pass: SMTP_PASS }
-                    : undefined,
-        });
-    }
-    // Fallback for local/dev: outputs the email as JSON to console
-    if (NODE_ENV !== "production") {
-        return nodemailer.createTransport({ jsonTransport: true });
-    }
-    throw new Error(
-        "SMTP is not configured. Set SMTP_HOST/SMTP_PORT in environment.",
-    );
-}
-
-const transporter = createTransport();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendRegistrationConfirmation({ registration, event }) {
     console.log("📨 sendRegistrationConfirmation called", {
@@ -33,33 +8,43 @@ async function sendRegistrationConfirmation({ registration, event }) {
         event: event.title,
     });
 
-    const from = process.env.SMTP_FROM || "no-reply@causeconnect.local";
-    const subject = `Registration confirmed: ${event.title}`;
     const dateStr = new Date(event.date).toLocaleString();
 
-    try {
-        console.log("🚀 Attempting to send email...");
+    const html = `
+    <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;line-height:1.6;color:#111">
+      <p>Hi ${registration.name},</p>
+      <p>You're registered for <strong>${event.title}</strong>.</p>
+      <ul>
+        <li><strong>Date:</strong> ${dateStr}</li>
+        <li><strong>Location:</strong> ${event.location}</li>
+        <li><strong>Attendees:</strong> ${registration.attendees}</li>
+      </ul>
+      ${registration.notes ? `<p><strong>Your notes:</strong> ${registration.notes}</p>` : ""}
+      <p>If you have any questions, reply to this email.</p>
+      <p>— Cause Connect</p>
+    </div>
+  `;
 
-        const info = await transporter.sendMail({
-            from,
+    try {
+        console.log("🚀 Attempting to send email to", registration.email);
+
+        const response = await resend.emails.send({
+            from: "Cause Connect <onboarding@resend.dev>",
             to: registration.email,
-            subject,
-            text: `Hi ${registration.name}, you're registered for ${event.title}`,
-            html: `<p>Hi ${registration.name}</p>`,
+            subject: `Registration confirmed: ${event.title}`,
+            html,
         });
 
         console.log("✅ Email sent successfully", {
-            messageId: info.messageId,
-            response: info.response,
+            response: response,
+            id: response?.data?.id || response?.id,
         });
     } catch (error) {
         console.error("❌ Email sending failed", {
             message: error.message,
-            code: error.code,
-            response: error.response,
             stack: error.stack,
         });
-        throw error; // important so frontend knows it failed
+        throw error;
     }
 }
 
