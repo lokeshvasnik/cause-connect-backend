@@ -28,45 +28,39 @@ function createTransport() {
 const transporter = createTransport();
 
 async function sendRegistrationConfirmation({ registration, event }) {
+    console.log("📨 sendRegistrationConfirmation called", {
+        to: registration.email,
+        event: event.title,
+    });
+
     const from = process.env.SMTP_FROM || "no-reply@causeconnect.local";
     const subject = `Registration confirmed: ${event.title}`;
     const dateStr = new Date(event.date).toLocaleString();
 
-    const text = [
-        `Hi ${registration.name},`,
-        "",
-        `You're registered for "${event.title}".`,
-        `Date: ${dateStr}`,
-        `Location: ${event.location}`,
-        `Attendees: ${registration.attendees}`,
-        "",
-        "If you have any questions, reply to this email.",
-        "",
-        "— Cause Connect",
-    ].join("\n");
+    try {
+        console.log("🚀 Attempting to send email...");
 
-    const html = `
-    <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;line-height:1.6;color:#111">
-      <p>Hi ${registration.name},</p>
-      <p>You're registered for <strong>${event.title}</strong>.</p>
-      <ul>
-        <li><strong>Date:</strong> ${dateStr}</li>
-        <li><strong>Location:</strong> ${event.location}</li>
-        <li><strong>Attendees:</strong> ${registration.attendees}</li>
-      </ul>
-      ${registration.notes ? `<p><strong>Your notes:</strong> ${registration.notes}</p>` : ""}
-      <p>If you have any questions, reply to this email.</p>
-      <p>— Cause Connect</p>
-    </div>
-  `;
+        const info = await transporter.sendMail({
+            from,
+            to: registration.email,
+            subject,
+            text: `Hi ${registration.name}, you're registered for ${event.title}`,
+            html: `<p>Hi ${registration.name}</p>`,
+        });
 
-    await transporter.sendMail({
-        from,
-        to: registration.email,
-        subject,
-        text,
-        html,
-    });
+        console.log("✅ Email sent successfully", {
+            messageId: info.messageId,
+            response: info.response,
+        });
+    } catch (error) {
+        console.error("❌ Email sending failed", {
+            message: error.message,
+            code: error.code,
+            response: error.response,
+            stack: error.stack,
+        });
+        throw error; // important so frontend knows it failed
+    }
 }
 
 module.exports = { sendRegistrationConfirmation };
