@@ -29,7 +29,7 @@ async function sendRegistrationConfirmation({ registration, event }) {
         console.log("🚀 Attempting to send email to", registration.email);
 
         const response = await resend.emails.send({
-            from: "Cause Connect <onboarding@resend.dev>",
+            from: "Cause Connect <onboarding@lokeshvasnik.codes>",
             to: registration.email,
             subject: `Registration confirmed: ${event.title}`,
             html,
