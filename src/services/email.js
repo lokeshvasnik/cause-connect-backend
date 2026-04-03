@@ -8,7 +8,15 @@ async function sendRegistrationConfirmation({ registration, event }) {
         event: event.title,
     });
 
-    const dateStr = new Date(event.date).toLocaleString();
+    const dateStr = new Date(event.date).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    });
 
     const html = `
     <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;line-height:1.6;color:#111">
