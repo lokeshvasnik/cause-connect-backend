@@ -23,7 +23,6 @@ async function sendRegistrationConfirmation({ registration, event }) {
       <p>Hi ${registration.name},</p>
       <p>You're registered for <strong>${event.title}</strong>.</p>
       <ul>
-        <li><strong>Date:</strong> ${dateStr}</li>
         <li><strong>Location:</strong> ${event.location}</li>
         <li><strong>Attendees:</strong> ${registration.attendees}</li>
       </ul>
